@@ -953,39 +953,6 @@ async def update_task(
         return create_error_response(e, "/doc/update", debug, start_time)
 
 
-@mcp.tool()
-async def trash_task(task_id: str, debug: bool = False) -> StandardResponse:
-    """Move a task to Marvin's trash (requires full-access token).
-
-    The task can be recovered from the trash in the Marvin app.
-    This sets the deletedAt timestamp, which is how Marvin's trash works.
-
-    Args:
-        task_id: The task ID to trash
-    """
-    start_time = time.time()
-    try:
-        api_client = create_api_client()
-        now_ms = int(time.time() * 1000)
-        setters = [
-            {"key": "deletedAt", "val": now_ms},
-            {"key": "updatedAt", "val": now_ms},
-        ]
-        result = api_client.update_task(task_id, setters)
-
-        return create_simple_response(
-            data={"result": result, "trashed_task_id": task_id},
-            summary_text=f"Moved task {task_id} to trash",
-            api_endpoint="/doc/update",
-            api_calls_made=1,
-            debug=debug,
-            start_time=start_time,
-        )
-    except Exception as e:
-        logger.exception("Failed to trash task %s", task_id)
-        return create_error_response(e, "/doc/update", debug, start_time)
-
-
 def start():
     """Start the MCP server"""
 
