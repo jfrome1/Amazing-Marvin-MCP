@@ -883,6 +883,104 @@ async def get_completed_tasks_for_date(
         return create_error_response(e, "/doneItems", debug, start_time)
 
 
+@mcp.tool()
+async def get_task_by_id(task_id: str, debug: bool = False) -> StandardResponse:
+    """Get a specific task or document by ID (requires full-access token).
+
+    Use when you need full details of a specific task and have its ID.
+
+    Args:
+        task_id: The task/document ID to retrieve
+    """
+    start_time = time.time()
+    try:
+        api_client = create_api_client()
+        task = api_client.get_task(task_id)
+
+        return create_simple_response(
+            data={"task": task},
+            summary_text=f"Retrieved task {task_id}",
+            api_endpoint="/doc",
+            api_calls_made=1,
+            debug=debug,
+            start_time=start_time,
+        )
+    except Exception as e:
+        logger.exception("Failed to get task %s", task_id)
+        return create_error_response(e, "/doc", debug, start_time)
+
+
+@mcp.tool()
+async def update_task(
+    task_id: str,
+    updates: dict[str, Any],
+    debug: bool = False,
+) -> StandardResponse:
+    """Update fields on an existing task (requires full-access token).
+
+    Args:
+        task_id: The task ID to update
+        updates: Dict of field names to new values. Common fields:
+            - title (str): Task title
+            - done (bool): Completion status
+            - dueDate (str): Due date in YYYY-MM-DD format
+            - day (str): Scheduled date in YYYY-MM-DD format
+            - parentId (str): Parent project/category ID
+            - labelIds (list[str]): Label IDs
+            - backburner (bool): Backburner status
+            - note (str): Task notes
+            - isStarred (int): Star color (0=none, 1=yellow, 2=orange, 3=red)
+
+    Warning: Uses the full-access API. Changes are immediate and not easily reversible.
+    """
+    start_time = time.time()
+    try:
+        api_client = create_api_client()
+
+        setters = [{"key": k, "val": v} for k, v in updates.items()]
+        result = api_client.update_task(task_id, setters)
+
+        return create_simple_response(
+            data={"result": result, "updated_fields": list(updates.keys())},
+            summary_text=f"Updated task {task_id}: {', '.join(updates.keys())}",
+            api_endpoint="/doc/update",
+            api_calls_made=1,
+            debug=debug,
+            start_time=start_time,
+        )
+    except Exception as e:
+        logger.exception("Failed to update task %s", task_id)
+        return create_error_response(e, "/doc/update", debug, start_time)
+
+
+@mcp.tool()
+async def delete_task(task_id: str, debug: bool = False) -> StandardResponse:
+    """Permanently delete a task (requires full-access token).
+
+    WARNING: This permanently deletes the task. It bypasses Marvin's trash
+    and cannot be recovered through the Marvin UI. Use with caution.
+
+    Args:
+        task_id: The task ID to delete
+    """
+    start_time = time.time()
+    try:
+        api_client = create_api_client()
+        result = api_client.delete_task(task_id)
+
+        return create_simple_response(
+            data={"result": result},
+            summary_text=f"Permanently deleted task {task_id}",
+            api_endpoint="/doc/delete",
+            api_calls_made=1,
+            debug=debug,
+            start_time=start_time,
+        )
+    except Exception as e:
+        logger.exception("Failed to delete task %s", task_id)
+        return create_error_response(e, "/doc/delete", debug, start_time)
+
+
 def start():
     """Start the MCP server"""
 
